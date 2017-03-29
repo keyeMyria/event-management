@@ -1,0 +1,42 @@
+kind: Deployment
+apiVersion: extensions/v1beta1
+metadata:
+  name: web
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - name: web
+        image: gcr.io/eventyay/web:latest
+        command: ["/bin/sh","-c"]
+        args: ["./kubernetes/run.sh"]
+        livenessProbe:
+          httpGet:
+            path: /health-check/
+            port: 8080
+          initialDelaySeconds: 15
+          timeoutSeconds: 1
+        ports:
+        - containerPort: 8080
+          protocol: TCP
+        env:
+        - name: C_FORCE_ROOT
+          value: 'true'
+        - name: PYTHONUNBUFFERED
+          value: 'TRUE'
+        - name: DEPLOYMENT
+          value: 'web'
+        - name: FORCE_SSL
+          value: 'yes'
+        volumeMounts:
+          - mountPath: /opev/open_event/static/uploads/
+            name: nfs-storage
+      restartPolicy: Always
+      volumes:
+        - name: nfs-storage
+          persistentVolumeClaim:
+            claimName: nfs-claim
